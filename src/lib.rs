@@ -21,6 +21,9 @@
     future_incompatible
 )]
 
+#[cfg(test)]
+mod tests;
+
 use std::{process::Command, str::FromStr};
 
 /// Runs a command and returns the output.
@@ -41,7 +44,7 @@ fn command(command: &str) -> String {
 }
 
 /// The current state of the player.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PlayerStatus {
     /// Media is currently playing.
     Playing,
@@ -65,7 +68,7 @@ impl FromStr for PlayerStatus {
 }
 
 /// The player's looping state.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LoopStatus {
     /// Media is not looping.
     None,
@@ -89,7 +92,7 @@ impl FromStr for LoopStatus {
 }
 
 /// The player's shuffle state to set.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ShuffleStatus {
     /// Media will be shuffled.
     On,
@@ -186,6 +189,7 @@ impl PlayerCtl {
     #[must_use]
     pub fn status() -> PlayerStatus {
         command("playerctl status")
+            .trim()
             .parse()
             .expect("Failed to parse player status")
     }
@@ -219,6 +223,7 @@ impl PlayerCtl {
     #[must_use]
     pub fn loop_get() -> LoopStatus {
         command("playerctl loop")
+            .trim()
             .parse()
             .expect("Failed to parse loop status")
     }
@@ -236,6 +241,7 @@ impl PlayerCtl {
     #[must_use]
     pub fn shuffle_get() -> ShuffleStatus {
         command("playerctl shuffle")
+            .trim()
             .parse()
             .expect("Failed to parse shuffle status")
     }
