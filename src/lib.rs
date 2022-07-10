@@ -8,10 +8,26 @@
 //!
 //! See the [playerctl](https://github.com/altdesktop/playerctl) project for more information.
 
-#![warn(missing_docs)]
+// These aren't completely necessary,
+// but everything they've suggested so far has been useful.
+// Could be removed if they get too annoying.
+#![warn(
+    missing_docs,
+    clippy::missing_docs_in_private_items,
+    clippy::cargo,
+    clippy::unwrap_used,
+    clippy::pedantic,
+    clippy::nursery,
+    future_incompatible
+)]
 
-use std::process::Command;
+use std::{process::Command, str::FromStr};
 
+/// Runs a command and returns the output.
+///
+/// # Panics
+///
+/// Panics if the command fails to execute.
 fn command(command: &str) -> String {
     let mut parts = command.split_whitespace().collect::<Vec<&str>>();
 
@@ -21,7 +37,7 @@ fn command(command: &str) -> String {
         .unwrap_or_else(|_| panic!("Failed to execute command '{}'", command))
         .stdout;
 
-    String::from_utf8(stdout).unwrap()
+    String::from_utf8(stdout).expect("Stdout was not valid UTF-8")
 }
 
 /// The current state of the player.
@@ -35,13 +51,15 @@ pub enum PlayerStatus {
     Stopped,
 }
 
-impl From<String> for PlayerStatus {
-    fn from(status: String) -> Self {
-        match status.as_str() {
-            "Playing" => PlayerStatus::Playing,
-            "Paused" => PlayerStatus::Paused,
-            "Stopped" => PlayerStatus::Stopped,
-            _ => panic!("Unknown player status"),
+impl FromStr for PlayerStatus {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Playing" => Ok(Self::Playing),
+            "Paused" => Ok(Self::Paused),
+            "Stopped" => Ok(Self::Stopped),
+            _ => Err(()),
         }
     }
 }
@@ -57,13 +75,15 @@ pub enum LoopStatus {
     Playlist,
 }
 
-impl From<String> for LoopStatus {
-    fn from(status: String) -> Self {
-        match status.as_str() {
-            "None" => LoopStatus::None,
-            "Track" => LoopStatus::Track,
-            "Playlist" => LoopStatus::Playlist,
-            _ => panic!("Unknown loop status"),
+impl FromStr for LoopStatus {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "None" => Ok(Self::None),
+            "Track" => Ok(Self::Track),
+            "Playlist" => Ok(Self::Playlist),
+            _ => Err(()),
         }
     }
 }
@@ -79,13 +99,15 @@ pub enum ShuffleStatus {
     Toggle,
 }
 
-impl From<String> for ShuffleStatus {
-    fn from(status: String) -> Self {
-        match status.as_str() {
-            "On" => ShuffleStatus::On,
-            "Off" => ShuffleStatus::Off,
-            "Toggle" => ShuffleStatus::Toggle,
-            _ => panic!("Unknown shuffle status"),
+impl FromStr for ShuffleStatus {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "On" => Ok(Self::On),
+            "Off" => Ok(Self::Off),
+            "Toggle" => Ok(Self::Toggle),
+            _ => Err(()),
         }
     }
 }
@@ -157,11 +179,19 @@ impl PlayerCtl {
     }
 
     /// Gets the current player status.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if playerctl returns an invalid status.
+    #[must_use]
     pub fn status() -> PlayerStatus {
-        command("playerctl status").into()
+        command("playerctl status")
+            .parse()
+            .expect("Failed to parse player status")
     }
 
     /// Get the metadata of the currently playing track.
+    #[must_use]
     pub fn metadata() -> TrackMetadata {
         let title = command("playerctl metadata title").trim().to_string();
         let artist = command("playerctl metadata artist").trim().to_string();
@@ -182,8 +212,15 @@ impl PlayerCtl {
     }
 
     /// Get the current loop status.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if playerctl returns an invalid status.
+    #[must_use]
     pub fn loop_get() -> LoopStatus {
-        command("playerctl loop").into()
+        command("playerctl loop")
+            .parse()
+            .expect("Failed to parse loop status")
     }
 
     /// Set the loop status.
@@ -192,8 +229,15 @@ impl PlayerCtl {
     }
 
     /// Get the current shuffle status.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if playerctl returns an invalid status.
+    #[must_use]
     pub fn shuffle_get() -> ShuffleStatus {
-        command("playerctl shuffle").into()
+        command("playerctl shuffle")
+            .parse()
+            .expect("Failed to parse shuffle status")
     }
 
     /// Set the shuffle status.
